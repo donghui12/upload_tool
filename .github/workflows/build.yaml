@@ -1,0 +1,63 @@
+name: Deploy to Production and Test
+
+on:
+  push:
+    branches:
+      - master
+      - test
+      - tw_test
+  pull_request:
+    types:
+      - closed
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '选择构建类型'
+        required: true
+        default: 'windows-exe'
+        type: choice
+        options:
+        - windows-exe
+
+jobs:     
+  build-windows-exe:
+    name: Build Windows Executable
+    runs-on: windows-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.build_type == 'windows-exe'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Build Windows executable
+        run: |
+          mkdir -p build
+          go mod tidy
+          go mod download
+          go build -o ../build/upload_tool.exe main.go
+
+      - name: Install AWS CLI
+        run: |
+          # 使用新的下载地址安装 AWS CLI
+          Invoke-WebRequest -Uri https://awscli.amazonaws.com/AWSCLIV2.msi -OutFile awscliv2.msi
+          Start-Process msiexec.exe -ArgumentList '/i', 'awscliv2.msi', '/quiet', '/norestart' -NoNewWindow -Wait
+          aws --version  # 确认安装成功
+      
+      - name: Set up AWS CLI credentials (MinIO)
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.MINIO_ACCESS_KEY }}
+          aws configure set aws_secret_access_key ${{ secrets.MINIO_SECRET_KEY }}
+          aws configure set default.region us-east-1
+          aws configure set default.output json
+  
+      - name: Upload artifact to MinIO
+        run: |
+          aws --endpoint-url=${{ secrets.MINIO_SERVER_URL }} s3 cp build/upload_tool.exe s3://shopee/ --acl public-read
