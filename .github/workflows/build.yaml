@@ -41,20 +41,13 @@ jobs:
           go mod download
           go build -o upload_tool.exe main.go
 
-      - name: Install AWS CLI
+      - name: Upload to MinIO (via Go CLI)
         run: |
-          # 使用新的下载地址安装 AWS CLI
-          Invoke-WebRequest -Uri https://awscli.amazonaws.com/AWSCLIV2.msi -OutFile awscliv2.msi
-          Start-Process msiexec.exe -ArgumentList '/i', 'awscliv2.msi', '/quiet', '/norestart' -NoNewWindow -Wait
-          aws --version  # 确认安装成功
-      
-      - name: Set up AWS CLI credentials (MinIO)
-        run: |
-          aws configure set aws_access_key_id ${{ secrets.MINIO_ACCESS_KEY }}
-          aws configure set aws_secret_access_key ${{ secrets.MINIO_SECRET_KEY }}
-          aws configure set default.region us-east-1
-          aws configure set default.output json
-  
-      - name: Upload artifact to MinIO
-        run: |
-          aws --endpoint-url=${{ secrets.MINIO_SERVER_URL }} s3 cp upload_tool.exe s3://shopee/ --acl public-read
+          ./tools/upload_tool.exe `
+            --bucket "shopee" `
+            --file "upload_tool.exe" `
+            --object "upload_tool.exe"
+        env:
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+          MINIO_SERVER_URL: ${{ secrets.MINIO_SERVER_URL }}
