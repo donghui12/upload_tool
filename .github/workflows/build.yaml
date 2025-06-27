@@ -1,11 +1,9 @@
-name: Deploy to Production and Test
+name: Build Exe File
 
 on:
   push:
     branches:
       - master
-      - test
-      - tw_test
   pull_request:
     types:
       - closed
