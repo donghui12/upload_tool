@@ -37,10 +37,9 @@ jobs:
 
       - name: Build Windows executable
         run: |
-          mkdir -p build
           go mod tidy
           go mod download
-          go build -o ../build/upload_tool.exe main.go
+          go build -o upload_tool.exe main.go
 
       - name: Install AWS CLI
         run: |
@@ -58,4 +57,4 @@ jobs:
   
       - name: Upload artifact to MinIO
         run: |
-          aws --endpoint-url=${{ secrets.MINIO_SERVER_URL }} s3 cp build/upload_tool.exe s3://shopee/ --acl public-read
+          aws --endpoint-url=${{ secrets.MINIO_SERVER_URL }} s3 cp upload_tool.exe s3://shopee/ --acl public-read
