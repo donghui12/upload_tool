@@ -40,7 +40,11 @@ func main() {
 
 	// === 上传文件 ===
 	ctx := context.Background()
-	info, err := client.FPutObject(ctx, *bucket, *object, *file, minio.PutObjectOptions{})
+	opts := minio.PutObjectOptions{
+		ContentType: "application/octet-stream",
+		PartSize:    32 * 1024 * 1024, // 32MB 大分片，提高上传速度
+	}
+	info, err := client.FPutObject(ctx, *bucket, *object, *file, opts)
 	if err != nil {
 		log.Fatalf("❌ 上传失败: %v", err)
 	}
